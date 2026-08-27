@@ -1,0 +1,7 @@
+[
+    { "caption": "Inbox: Park This", "command": "inbox_park_this" },
+    { "caption": "Inbox: Open Inbox", "command": "inbox_open" },
+    { "caption": "Inbox: Set Path", "command": "inbox_set_path" },
+    { "caption": "Inbox: Harvest", "command": "inbox_harvest" },
+    { "caption": "Inbox: Search", "command": "inbox_search" }
+]

@@ -1,0 +1,18 @@
+Inbox is installed.
+
+Commands (Ctrl+Shift+P / Cmd+Shift+P):
+  Inbox: Open Inbox
+  Inbox: Park This
+  Inbox: Harvest
+  Inbox: Search
+  Inbox: Set Path
+
+Keys:
+  Linux/Windows: Ctrl+Alt+I / K / H / F
+  macOS: Cmd+Option+I / K / H / F  (Control+Option also works)
+
+Default folder: ~/Notes/inbox
+Change it with Inbox: Set Path.
+
+AI: MCP is on http://127.0.0.1:8766/mcp while Sublime is running.
+  Point your client at that URL (see README). No PATH setup.

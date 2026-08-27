@@ -1,0 +1,6 @@
+[
+    { "keys": ["super+alt+i"], "command": "inbox_open" },
+    { "keys": ["super+alt+k"], "command": "inbox_park_this" },
+    { "keys": ["super+alt+h"], "command": "inbox_harvest" },
+    { "keys": ["super+alt+f"], "command": "inbox_search" }
+]

@@ -1,0 +1,6 @@
+[
+    { "keys": ["ctrl+alt+i"], "command": "inbox_open" },
+    { "keys": ["ctrl+alt+k"], "command": "inbox_park_this" },
+    { "keys": ["ctrl+alt+h"], "command": "inbox_harvest" },
+    { "keys": ["ctrl+alt+f"], "command": "inbox_search" }
+]
