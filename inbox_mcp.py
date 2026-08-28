@@ -3,6 +3,7 @@ import os
 import socketserver
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 
 import sublime
 
@@ -14,41 +15,56 @@ _server = None
 _thread = None
 _url = None
 
-TOOLS = [
-    {
-        "name": "new_note",
-        "description": "Create a new Inbox note in Sublime Text and save it.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "title": {"type": "string", "description": "First-line title"},
-                "content": {"type": "string", "description": "Note body"},
+def _inbox_folder():
+    from .inbox import inbox_path
+    return os.path.abspath(inbox_path())
+
+
+def _instructions():
+    folder = _inbox_folder()
+    return (
+        "Inbox notes are markdown files in {0}. "
+        "Use new_note to create one; Sublime names it "
+        "YYYY-MM-DD-HHMMSS-first-line.md and parks it. "
+        "List, read, search, and edit files in {0} with your normal file tools."
+    ).format(folder)
+
+
+def _tools():
+    folder = _inbox_folder()
+    return [
+        {
+            "name": "new_note",
+            "description": (
+                "Create a new Inbox note and save it in {0}. "
+                "Existing notes are ordinary markdown files in that folder — "
+                "list, read, search, or edit them with your file tools."
+            ).format(folder),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "First-line title"},
+                    "content": {"type": "string", "description": "Note body"},
+                },
+                "required": [],
             },
-            "required": [],
         },
-    },
-    {
-        "name": "list_notes",
-        "description": "List recent notes in the Inbox folder.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "limit": {"type": "integer", "description": "Max notes (default 30)"},
-            },
+    ]
+
+
+def _resources():
+    folder = _inbox_folder()
+    return [
+        {
+            "uri": Path(folder).as_uri(),
+            "name": "inbox",
+            "description": (
+                "Folder of Inbox notes (markdown) at {}. "
+                "Use file tools to list, read, search, and edit."
+            ).format(folder),
+            "mimeType": "text/plain",
         },
-    },
-    {
-        "name": "read_note",
-        "description": "Read one Inbox note. Path must be inside the inbox folder.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "path": {"type": "string", "description": "Absolute or inbox-relative path"},
-            },
-            "required": ["path"],
-        },
-    },
-]
+    ]
 
 
 def _run_on_ui(fn, timeout=8):
@@ -82,20 +98,6 @@ def _text(text):
     return {"content": [{"type": "text", "text": text}]}
 
 
-def _safe_inbox_path(raw):
-    from .inbox import inbox_path
-
-    folder = os.path.abspath(inbox_path())
-    path = raw if os.path.isabs(raw) else os.path.join(folder, raw)
-    path = os.path.abspath(path)
-    try:
-        if os.path.commonpath([path, folder]) != folder:
-            return None
-    except ValueError:
-        return None
-    return path
-
-
 def _call_tool(name, args):
     from . import inbox
 
@@ -107,24 +109,6 @@ def _call_tool(name, args):
             return _text("empty note")
         path = _run_on_ui(lambda: inbox.create_inbox_note(content, title))
         return _text(path or "could not create note")
-    if name == "list_notes":
-        folder = inbox.inbox_path()
-        os.makedirs(folder, exist_ok=True)
-        limit = int(args.get("limit") or 30)
-        names = []
-        for name in os.listdir(folder):
-            full = os.path.join(folder, name)
-            if os.path.isfile(full) and not name.startswith("."):
-                names.append((os.path.getmtime(full), full))
-        names.sort(reverse=True)
-        lines = [p for _, p in names[: max(1, min(limit, 100))]]
-        return _text("\n".join(lines) if lines else "(empty inbox)")
-    if name == "read_note":
-        path = _safe_inbox_path(args.get("path") or "")
-        if not path or not os.path.isfile(path):
-            return _text("note not found")
-        with open(path, "r", encoding="utf-8") as fh:
-            return _text(fh.read())
     raise ValueError("unknown tool: " + name)
 
 
@@ -140,13 +124,17 @@ def handle_rpc(msg):
     if method == "initialize":
         return _ok(req_id, {
             "protocolVersion": "2025-03-26",
-            "capabilities": {"tools": {"listChanged": False}},
+            "capabilities": {
+                "tools": {"listChanged": False},
+                "resources": {"listChanged": False, "subscribe": False},
+            },
             "serverInfo": {"name": "inbox", "version": "1.0.0"},
+            "instructions": _instructions(),
         })
     if method == "ping":
         return _ok(req_id, {})
     if method == "tools/list":
-        return _ok(req_id, {"tools": TOOLS})
+        return _ok(req_id, {"tools": _tools()})
     if method == "tools/call":
         params = msg.get("params") or {}
         try:
@@ -156,9 +144,23 @@ def handle_rpc(msg):
                 "content": [{"type": "text", "text": str(exc)}],
                 "isError": True,
             })
-    if method in ("resources/list", "prompts/list"):
-        key = "resources" if method.startswith("resources") else "prompts"
-        return _ok(req_id, {key: []})
+    if method == "resources/list":
+        return _ok(req_id, {"resources": _resources()})
+    if method == "resources/read":
+        params = msg.get("params") or {}
+        uri = params.get("uri") or ""
+        folder = _inbox_folder()
+        if uri.rstrip("/") != Path(folder).as_uri().rstrip("/"):
+            return _err(req_id, -32002, "unknown resource")
+        return _ok(req_id, {
+            "contents": [{
+                "uri": Path(folder).as_uri(),
+                "mimeType": "text/plain",
+                "text": _instructions(),
+            }],
+        })
+    if method == "prompts/list":
+        return _ok(req_id, {"prompts": []})
     return _err(req_id, -32601, "method not found: " + str(method))
 
 
@@ -230,12 +232,22 @@ class _Server(socketserver.ThreadingMixIn, HTTPServer):
     allow_reuse_address = True
 
 
+def _discovery_path():
+    return os.path.join(sublime.packages_path(), "User", "Inbox.mcp.json")
+
+
 def _write_discovery(url):
-    path = os.path.join(sublime.packages_path(), "User", "Inbox.mcp.json")
     try:
-        with open(path, "w", encoding="utf-8") as fh:
+        with open(_discovery_path(), "w", encoding="utf-8") as fh:
             json.dump({"url": url, "type": "http"}, fh, indent=2)
             fh.write("\n")
+    except OSError:
+        pass
+
+
+def _clear_discovery():
+    try:
+        os.remove(_discovery_path())
     except OSError:
         pass
 
@@ -271,7 +283,13 @@ def stop():
             server.server_close()
         except Exception:
             pass
+        print("Inbox MCP: off")
     _thread = None
+    _clear_discovery()
+
+
+def running():
+    return _server is not None
 
 
 def url():

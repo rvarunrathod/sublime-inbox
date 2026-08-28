@@ -19,6 +19,11 @@
                                     "base_file": "${packages}/sublime-inbox/Inbox.sublime-settings",
                                     "default": "{\n\t$0\n}\n"
                                 }
+                            },
+                            {
+                                "caption": "Enable MCP",
+                                "command": "inbox_toggle_mcp",
+                                "checkbox": true
                             }
                         ]
                     }

@@ -1,5 +1,6 @@
 {
     "inbox_path": "~/Notes/inbox",
     "inbox_extension": "md",
-    "silent_park": true
+    "silent_park": true,
+    "mcp": true
 }

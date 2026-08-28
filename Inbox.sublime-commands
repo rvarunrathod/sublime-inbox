@@ -3,5 +3,6 @@
     { "caption": "Inbox: Open Inbox", "command": "inbox_open" },
     { "caption": "Inbox: Set Path", "command": "inbox_set_path" },
     { "caption": "Inbox: Harvest", "command": "inbox_harvest" },
-    { "caption": "Inbox: Search", "command": "inbox_search" }
+    { "caption": "Inbox: Search", "command": "inbox_search" },
+    { "caption": "Inbox: Toggle MCP", "command": "inbox_toggle_mcp" }
 ]

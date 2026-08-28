@@ -54,7 +54,9 @@ Silent park (on by default) saves untitled notes when you switch tab or close.
 
 ## AI (MCP)
 
-Starts with Sublime. Nothing on `PATH`. Nothing to configure in Inbox.
+On by default while Sublime is running. Nothing on `PATH`.
+
+Turn it off with **Inbox: Toggle MCP**, **Preferences → Package Settings → Inbox → Enable MCP**, or `"mcp": false` in Inbox settings. Same command turns it back on. The console prints the URL when it starts and `Inbox MCP: off` when it stops.
 
 URL: `http://127.0.0.1:8766/mcp` (also printed in the Sublime console)
 
@@ -79,4 +81,4 @@ grok mcp doctor inbox
 }
 ```
 
-Tools: `new_note`, `list_notes`, `read_note`. Same on macOS, Linux, and Windows.
+Tool: `new_note` (title + content). Initialize instructions and the tool description include the inbox folder path so the model knows notes are ordinary markdown files there — list, read, search, and edit with the client's own file tools. Same on macOS, Linux, and Windows.

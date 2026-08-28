@@ -6,19 +6,36 @@ import sublime_plugin
 from .inbox_fs import park_path as fs_park_path
 
 
+_MCP_SETTINGS_KEY = "inbox_mcp"
+
+
 def plugin_loaded():
     print("Inbox: loaded")
-    from . import inbox_mcp
-    inbox_mcp.start()
+    inbox_settings().add_on_change(_MCP_SETTINGS_KEY, _sync_mcp)
+    _sync_mcp()
 
 
 def plugin_unloaded():
+    inbox_settings().clear_on_change(_MCP_SETTINGS_KEY)
     from . import inbox_mcp
     inbox_mcp.stop()
 
 
 def inbox_settings():
     return sublime.load_settings("Inbox.sublime-settings")
+
+
+def mcp_enabled():
+    return bool(inbox_settings().get("mcp", True))
+
+
+def _sync_mcp():
+    from . import inbox_mcp
+    if mcp_enabled():
+        if not inbox_mcp.running():
+            inbox_mcp.start()
+    else:
+        inbox_mcp.stop()
 
 
 def inbox_path():
@@ -147,6 +164,22 @@ class InboxSetPathCommand(sublime_plugin.WindowCommand):
         settings.set("inbox_path", path)
         sublime.save_settings("Inbox.sublime-settings")
         sublime.status_message("Inbox: " + path)
+
+
+class InboxToggleMcpCommand(sublime_plugin.WindowCommand):
+    def is_checked(self):
+        return mcp_enabled()
+
+    def run(self):
+        settings = inbox_settings()
+        enabled = not mcp_enabled()
+        settings.set("mcp", enabled)
+        sublime.save_settings("Inbox.sublime-settings")
+        from . import inbox_mcp
+        if enabled:
+            sublime.status_message("Inbox MCP: " + (inbox_mcp.url() or "failed"))
+        else:
+            sublime.status_message("Inbox MCP: off")
 
 
 class InboxParkThisCommand(sublime_plugin.TextCommand):

@@ -6,6 +6,7 @@ Commands (Ctrl+Shift+P / Cmd+Shift+P):
   Inbox: Harvest
   Inbox: Search
   Inbox: Set Path
+  Inbox: Toggle MCP
 
 Keys:
   Linux/Windows: Ctrl+Alt+I / K / H / F
@@ -16,3 +17,4 @@ Change it with Inbox: Set Path.
 
 AI: MCP is on http://127.0.0.1:8766/mcp while Sublime is running.
   Point your client at that URL (see README). No PATH setup.
+  Turn it off with Inbox: Toggle MCP, or set "mcp": false.
